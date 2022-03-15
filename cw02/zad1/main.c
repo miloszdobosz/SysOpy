@@ -11,6 +11,8 @@ int main(int argc, char* argv[]) {
 
     printf("Podaj 2 pliki:\n");
     scanf("%s%s", source_path, target_path);
+
+    //TODO sprawdz nazwy plikow czy spoko
   } else {
     source_path = argv[1];
     target_path = argv[2];
@@ -27,5 +29,15 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  //char* source_buffer = malloc(BUFFER_SIZE);
 
+  //while (fgets(source_buffer, BUFFER_SIZE, source) != NULL) {
+  //  printf("%s", source_buffer);
+  //}
+  
+  printf("alsdkfjlasdjf");
+
+  fflush(stdout);
+  fclose(source);
+  fclose(target);
 }

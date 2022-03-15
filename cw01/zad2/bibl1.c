@@ -11,7 +11,7 @@ char** allocate(int n) {
   if (n < 0) return NULL;
 
 	char** table = calloc(n, sizeof(void*));
-	printf("zarezerwowano");
+	printf("zarezerwowano\n");
 
 	return table;
 }
@@ -25,7 +25,7 @@ void count(char* file) {
   system(command);
 
   free(command);
-  printf("policzono");
+  printf("policzono\n");
 }
 
 char* write_temp() {
@@ -38,12 +38,12 @@ char* write_temp() {
   char* buf = malloc(size);
   
   read(file_descriptor, buf, size);
-  printf("zapisano");
+  printf("zapisano\n");
 
   return buf;
 }
 
 void clear(char** table, int index) {
   free(table[index]);
-  printf("usunieto");
+  printf("usunieto\n");
 }

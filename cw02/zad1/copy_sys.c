@@ -35,9 +35,6 @@ int main(int argc, char* argv[]) {
     scanf("%s%s", source_path, target_path);
   } 
 
-  //printf("%s\n%s\n", source_path, target_path);
-  //fflush(stdout);
-
   if ((source = open(source_path, O_RDONLY)) == -1 ||
     (target = open(target_path, O_WRONLY|O_CREAT, S_IRUSR|S_IWUSR)) == -1) {
     printf("Blad otwierania plikow!");
@@ -58,12 +55,6 @@ int main(int argc, char* argv[]) {
 
       if (line_empty) {
         lseek(target, -line_size, SEEK_CUR);
-      } else {
-        //lseek(source, -line_size, SEEK_CUR);
-        //char* buffer[line_size];
-        //read(source, buffer, line_size);
-        //write(target, buffer, line_size);
-        //printf("%d\n", line_size);
       }
 
       line_size = 0;

@@ -3,8 +3,8 @@
 #include <string.h>
 #include <ctype.h>
 
-#define BUFFER_SIZE 100
 #define PATH_SIZE 100
+#define BUFFER_SIZE 100
 
 int main(int argc, char* argv[]) {
   char* source_path;
@@ -31,6 +31,7 @@ int main(int argc, char* argv[]) {
   } 
 
   printf("%s\n%s\n", source_path, target_path);
+  fflush(stdout);
 
   if ((source = fopen(source_path, "r")) == NULL || (target = fopen(target_path, "w")) == NULL) {
     printf("Blad otwierania plikow!");

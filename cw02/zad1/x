@@ -14,8 +14,8 @@ int main(int argc, char* argv[]) {
   FILE* target;
 
   if (argc < 3) {
-    source_path[PATH_SIZE];
-    target_path[PATH_SIZE];
+    source_path = malloc(PATH_SIZE);
+    target_path = malloc(PATH_SIZE);
 
     printf("Podaj 2 pliki:\n");
     scanf("%s%s", source_path, target_path);
@@ -54,4 +54,7 @@ int main(int argc, char* argv[]) {
 
   fclose(source);
   fclose(target);
+
+  free(source_path);
+  free(target_path);
 }

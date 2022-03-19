@@ -7,6 +7,10 @@
 
 #define PATH_SIZE 100
 
+#define TRUE 1
+#define FALSE 0
+
+
 int main(int argc, char* argv[]) {
   char* source_path;
   char* target_path;
@@ -15,8 +19,8 @@ int main(int argc, char* argv[]) {
   int target;
 
   if (argc < 3) {
-    source_path = malloc(PATH_SIZE);
-    target_path = malloc(PATH_SIZE);
+    source_path[PATH_SIZE];
+    target_path[PATH_SIZE];
 
     printf("Podaj 2 pliki:\n");
     scanf("%s%s", source_path, target_path);
@@ -34,35 +38,41 @@ int main(int argc, char* argv[]) {
   //printf("%s\n%s\n", source_path, target_path);
   //fflush(stdout);
 
-  if ((source = open(source_path, O_RDONLY)) == -1 || (target = open(target_path, O_WRONLY|O_CREAT)) == -1) {
+  if ((source = open(source_path, O_RDONLY)) == -1 ||
+    (target = open(target_path, O_WRONLY|O_CREAT, S_IRUSR|S_IWUSR)) == -1) {
     printf("Blad otwierania plikow!");
     return 1;
   }
 
 
-  char next;
+  char current;
   int line_size = 0;
-  int line_empty = 1;
+  int line_empty = TRUE;
 
-  while(read(source, &next, 1) != 0) {
-    if (!isspace(next)) {
-      line_empty = 0;
-    }
+  while(read(source, &current, 1) != 0) {
+    line_size++;
 
-    if (next == '\n') {
+    if (!isspace(current)) {
+      line_empty = FALSE;
+    } else if (current == '\n') {
+
       if (line_empty) {
         lseek(target, -line_size, SEEK_CUR);
+      } else {
+        //lseek(source, -line_size, SEEK_CUR);
+        //char* buffer[line_size];
+        //read(source, buffer, line_size);
+        //write(target, buffer, line_size);
+        //printf("%d\n", line_size);
       }
+
       line_size = 0;
+      line_empty = TRUE;
     }
 
-    write(target, &next, 1);
-    line_size++;
+    write(target, &current, 1);
   }
 
   close(source);
   close(target);
-
-  free(source_path);
-  free(target_path);
 }

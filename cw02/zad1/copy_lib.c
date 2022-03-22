@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
   fflush(stdout);
 
   if ((source = fopen(source_path, "r")) == NULL || (target = fopen(target_path, "w")) == NULL) {
-    printf("Blad otwierania plikow!");
+    perror("Blad otwierania plikow");
     return 1;
   }
 

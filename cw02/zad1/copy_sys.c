@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
 
   if ((source = open(source_path, O_RDONLY)) == -1 ||
     (target = open(target_path, O_WRONLY|O_CREAT, S_IRUSR|S_IWUSR)) == -1) {
-    printf("Blad otwierania plikow!");
+    perror("Blad otwierania plikow");
     return 1;
   }
 

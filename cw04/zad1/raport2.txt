@@ -1,0 +1,1 @@
+Zarowno fork jak i exec zdaja sie nie dziedziczyc ustawien sygnalow po procesie macierzystym

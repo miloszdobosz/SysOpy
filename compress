@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo tar -czf DoboszMilosz-cw0{$1}.tar.gz cw0{$1} 
+tar -czf DoboszMilosz-cw0{$1}.tar.gz cw0{$1} 

@@ -2,18 +2,36 @@
 #include <stdio.h>
 #include <fcntl.h>
 
-int main (int argc, char *argv[])
+#define BUFFER_SIZE 256
+
+int execute(char *buffer, int in, int out)
 {
-  if (argc < 2) {
+  // execvp(buffer, args);
+}
+
+int main(int argc, char *argv[])
+{
+  if (argc < 2)
     printf("Zbyt malo argumentow!\n");
+
+  FILE *file = fopen(argv[1], "r");
+  if (file == NULL)
+    printf("Blad otwierania pliku!\n");
+
+  char buffer[BUFFER_SIZE];
+  int old[2];
+  int new[2];
+
+  while (getline(buffer, BUFFER_SIZE, file) != -1)
+  {
+    if (fork() == 0)
+    {
+      close(old[1]);
+      close(new[0]);
+      execute(buffer, old[0], new[1]);
+    }
+    *old = &new;
   }
-
-  char* path = argv[1];
-  int file = open(path, O_RDONLY);
-
-  FILE* grep_input = popen("grep Ala", "w");
-  fputs("Ala ma kota", grep_input); // przesłanie danych do grep-a
-  pclose(grep_input);
 
   close(file);
 

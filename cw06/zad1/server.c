@@ -2,71 +2,65 @@
 
 int main(int argc, char *argv[])
 {
-  int queue = msgget(ftok(PATH, PROJ_ID), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
-  on_exit(clear, &queue);
-  signal(SIGINT, exit);
+    queue = msgget(ftok(PATH, PROJ_ID), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+    atexit(clear);
+    signal(SIGINT, exit);
 
-  if (queue == -1)
-  {
-    perror("Blad tworzenia kolejki");
-    exit(1);
-  }
-
-  printf("Queue: %d\n", queue);
-
-  key_t clients[MAX_CLIENTS];
-  int clients_length = 0;
-
-  struct msgbuf message;
-  // while (1)
-  for (int i = 0; i < 1; i++)
-  {
-    msgrcv(queue, &message, MSG_SIZE, -6, 0);
-    perror("rcv");
-    printf("%ld %d %s\n", message.type, message.id, message.text);
-
-    switch (message.type)
+    if (queue == -1)
     {
-    case STOP:
-      clients[message.id] == -1;
-      break;
-
-    case LIST:
-      for (int i = 0; i < clients_length; i++)
-      {
-        if (clients[i] != -1)
-        {
-          printf("%d\n", i);
-        }
-      }
-      break;
-
-    case INIT:
-      clients[clients_length] = msgget(ftok(PATH, message.id), 0);
-      message.id = clients_length;
-
-      msgsnd(clients[clients_length], &message, MSG_SIZE, 0);
-      perror("snd");
-      printf("%ld %d %s\n", message.type, message.id, message.text);
-
-      clients_length++;
-      break;
-
-    case ALL:
-      for (int i = 0; i < clients_length; i++)
-      {
-        if (clients[i] != -1 && i != message.id)
-        {
-          msgsnd(clients[i], &message, MSG_SIZE, 0);
-        }
-      }
-      break;
-
-    case ONE:
-      msgsnd(clients[message.id], &message, MSG_SIZE, 0);
-      break;
+        perror("Blad otwierania kolejki");
+        exit(1);
     }
-  }
 
-  return 0;
+    printf("Queue: %d\n\n", queue);
+
+    int clients[MAX_CLIENTS];
+    int clients_length = 0;
+
+    while (1)
+    {
+        receive(queue, -6);
+
+        switch (message.type)
+        {
+        case STOP:
+            clients[message.id] == -1;
+            break;
+
+        case LIST:
+            printf("Active clients:\n");
+            for (int i = 0; i < clients_length; i++)
+            {
+                if (clients[i] != -1)
+                {
+                    printf("%d ", i);
+                }
+            }
+            printf("\n");
+            break;
+
+        case INIT:
+            clients[clients_length] = msgget(ftok(PATH, message.id), 0);
+            message.id = clients_length;
+            send(clients[clients_length]);
+            clients_length++;
+            break;
+
+        case ALL:
+            for (int i = 0; i < clients_length; i++)
+            {
+                if (clients[i] != -1 && i != message.id)
+                {
+                    send(clients[i]);
+                }
+            }
+            break;
+
+        case ONE:
+            send(clients[message.id]);
+            break;
+        }
+    }
+
+    return 0;
 }

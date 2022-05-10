@@ -5,15 +5,15 @@ int server, id;
 
 void stop()
 {
-    message.type = STOP;
-    message.id = id;
-    send(server);
+    sprintf(message, "%d", id);
+    send(server, STOP);
 }
 
 int main(int argc, char *argv[])
 {
-    server = msgget(ftok(PATH, PROJ_ID), 0);
-    queue = msgget(ftok(PATH, getpid()), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+    server = mq_open("/server", O_WRONLY);
+    sprintf(name, "/client%ld", time(NULL));
+    queue = mq_open(name, O_RDONLY | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
     atexit(clear);
     signal(SIGINT, exit);
 
@@ -24,15 +24,11 @@ int main(int argc, char *argv[])
     }
 
     printf("Queue: %d\n\n", queue);
+    sprintf(message, "%s", name);
+    send(server, INIT);
+    receive(queue);
 
-    message.type = INIT;
-    message.id = getpid(); // Serwer sam sobie liczy klucz przy pomocy ftok()
-    message.text[0] = '\0';
-
-    send(server);
-    receive(queue, INIT);
-
-    int id = message.id; // Poprawne id odesłane przez server
+    int id = atoi(message); // Poprawne id odesłane przez server
     printf("ID: %d\n\n", id);
     atexit(stop);
 
@@ -40,18 +36,16 @@ int main(int argc, char *argv[])
     {
         while (1)
         {
-            if (!receive(queue, -6))
+            if (!receive(queue))
                 exit(0);
         }
     }
 
-    long command;
+    unsigned int command;
     while (1)
     {
-        scanf("%ld", &command);
+        scanf("%d", &command);
         // printf("-------------\n");
-
-        message.type = command;
 
         switch (command)
         {
@@ -60,20 +54,15 @@ int main(int argc, char *argv[])
             break;
 
         case ALL:
-            message.id = id;
-            scanf("%s", message.text);
-            break;
-
         case ONE:
-            scanf("%d", &message.id);
-            scanf("%s", message.text);
+            scanf("%s", message);
             break;
 
         default:
             goto outer_break;
         }
 
-        send(server);
+        send(server, command);
         outer_break:
     }
 

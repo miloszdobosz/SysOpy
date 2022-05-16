@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <signal.h>
 #include <time.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
@@ -31,81 +33,88 @@ struct data
     int table_last;
     int oven[OVEN_SIZE];
     int oven_last;
-};
+    int running;
+} * pizzeria;
+int memory;
+int semaphores;
+
+struct
+{
+    struct sembuf to_oven[3];
+    struct sembuf from_oven[3];
+    struct sembuf close_oven[1];
+
+    struct sembuf to_table[3];
+    struct sembuf from_table[3];
+    struct sembuf close_table[1];
+} act = {
+    {// Add pizza to the oven
+     {OVEN, -1, 0},
+     {OVEN_PIZZA, 1, 0},
+     {OVEN_SPACE, -1, 0}},
+    {// Take pizza from the oven
+     {OVEN, -1, 0},
+     {OVEN_PIZZA, -1, 0},
+     {OVEN_SPACE, 1, 0}},
+    {// Close the oven
+     {OVEN, 1, 0}},
+    {// Add pizza to the table
+     {TABLE, -1, 0},
+     {TABLE_PIZZA, 1, 0},
+     {TABLE_SPACE, -1, 0}},
+    {// Take pizza from the table
+     {TABLE, -1, 0},
+     {TABLE_PIZZA, -1, 0},
+     {TABLE_SPACE, 1, 0}},
+    {// Close the table
+     {TABLE, 1, 0}}};
+
+void clear() {
+    // printf("\n\n");
+    pizzeria->running = 0;
+}
 
 int cook(int key)
 {
     int pid = getpid();
     int n, m, k;
 
-    struct data *table_oven = shmat(shmget(key, MEMORY_SIZE, S_IRUSR | S_IWUSR), NULL, 0);
-    int semaphores = semget(key, SEMAPHORES, S_IRUSR | S_IWUSR);
+    struct data *pizzeria = shmat(shmget(key, 0, S_IRUSR | S_IWUSR), NULL, 0);
+    int semaphores = semget(key, 0, S_IRUSR | S_IWUSR);
 
-    struct sembuf table_buffer[3];
-    struct sembuf oven_buffer[3];
-
-    table_buffer[0].sem_num = TABLE;
-    table_buffer[1].sem_num = TABLE_PIZZA;
-    table_buffer[2].sem_num = TABLE_SPACE;
-
-    table_buffer[0].sem_flg = 0;
-    table_buffer[1].sem_flg = 0;
-    table_buffer[2].sem_flg = 0;
-
-    oven_buffer[0].sem_num = OVEN;
-    oven_buffer[1].sem_num = OVEN_PIZZA;
-    oven_buffer[2].sem_num = OVEN_SPACE;
-
-    oven_buffer[0].sem_flg = 0;
-    oven_buffer[1].sem_flg = 0;
-    oven_buffer[2].sem_flg = 0;
-
-    while (1)
+    while (pizzeria->running)
     {
         n = rand() % 9;
-        printf("%d\t%ld\nPrzygotowuje pizze: %d.\n\n", pid, time(NULL), n);
+        printf("%d\t%ld\tPrzygotowuje pizze: %d.\n", pid, time(NULL), n);
         sleep(1 + (float)rand() / RAND_MAX);
-        printf("dlaksfjasfd");
 
-        oven_buffer[0].sem_op = -1;
-        oven_buffer[1].sem_op = 1;
-        oven_buffer[2].sem_op = -1;
-        semop(semaphores, oven_buffer, 3);
+        semop(semaphores, act.to_oven, 3);
         // Dodaj pizze
-        table_oven->oven[table_oven->oven_last] = n;
-        m = ++table_oven->oven_last;
-        printf("%d\t%ld\nDodalem pizze: %d. Liczba pizz w piecu: %d.\n\n", pid, time(NULL), n, m);
+        pizzeria->oven[pizzeria->oven_last] = n;
+        m = ++pizzeria->oven_last;
+        printf("%d\t%ld\tDodalem pizze: %d. Liczba pizz w piecu: %d.\n", pid, time(NULL), n, m);
 
-        oven_buffer[0].sem_op = 1;
-        semop(semaphores, oven_buffer, 1);
-
-        printf("dlaksfjasfd");
+        semop(semaphores, act.close_oven, 1);
 
         sleep(4 + (float)rand() / RAND_MAX);
 
-        oven_buffer[0].sem_op = -1;
-        oven_buffer[1].sem_op = -1;
-        oven_buffer[2].sem_op = 1;
-        semop(semaphores, oven_buffer, 3);
+        semop(semaphores, act.from_oven, 3);
         // Wyjmij pizze
-        m = --table_oven->oven_last;
-        n = table_oven->oven[table_oven->oven_last];
+        m = --pizzeria->oven_last;
+        n = pizzeria->oven[pizzeria->oven_last];
 
-        oven_buffer[0].sem_op = 1;
-        semop(semaphores, oven_buffer, 1);
+        semop(semaphores, act.close_oven, 1);
 
-        table_buffer[0].sem_op = -1;
-        table_buffer[1].sem_op = 1;
-        table_buffer[2].sem_op = -1;
-        semop(semaphores, table_buffer, 3);
+        semop(semaphores, act.to_table, 3);
         // Daj na stol
-        table_oven->table[table_oven->table_last] = n;
-        k = ++table_oven->table_last;
-        printf("%d\t%ld\nWyjmuje pizze: %d. Liczba pizz w piecu: %d. Liczba pizz na stole %d.\n\n", pid, time(NULL), n, m, k);
+        pizzeria->table[pizzeria->table_last] = n;
+        k = ++pizzeria->table_last;
+        printf("%d\t%ld\tWyjmuje pizze: %d. Liczba pizz w piecu: %d. Liczba pizz na stole %d.\n", pid, time(NULL), n, m, k);
 
-        table_buffer[0].sem_op = 1;
-        semop(semaphores, table_buffer, 1);
+        semop(semaphores, act.close_table, 1);
     }
+
+    shmdt(pizzeria);
 }
 
 int driver(int key)
@@ -113,41 +122,26 @@ int driver(int key)
     int pid = getpid();
     int n, k;
 
-    struct data *table_oven = shmat(shmget(key, MEMORY_SIZE, S_IRUSR | S_IWUSR), NULL, 0);
-    int semaphores = semget(key, SEMAPHORES, S_IRUSR | S_IWUSR);
+    struct data *pizzeria = shmat(shmget(key, 0, S_IRUSR | S_IWUSR), NULL, 0);
+    int semaphores = semget(key, 0, S_IRUSR | S_IWUSR);
 
-    table_oven->oven_last = 0;
-    table_oven->table_last = 0;
-
-    struct sembuf table_buffer[3];
-
-    table_buffer[0].sem_num = TABLE;
-    table_buffer[1].sem_num = TABLE_PIZZA;
-    table_buffer[2].sem_num = TABLE_SPACE;
-
-    table_buffer[0].sem_flg = 0;
-    table_buffer[1].sem_flg = 0;
-    table_buffer[2].sem_flg = 0;
-
-    while (1)
+    while (pizzeria->running)
     {
-        table_buffer[0].sem_op = -1;
-        table_buffer[1].sem_op = -1;
-        table_buffer[2].sem_op = 1;
-        semop(semaphores, table_buffer, 3);
+        semop(semaphores, act.from_table, 3);
 
         // Pobierz pizze
-        k = --table_oven->table_last;
-        n = table_oven->table[k];
-        printf("%d\t%ld\nPobieram pizze: %d. Liczba pizz na stole: %d.\n\n", pid, time(NULL), n, k);
+        k = --pizzeria->table_last;
+        n = pizzeria->table[k];
+        printf("%d\t%ld\tPobieram pizze: %d. Liczba pizz na stole: %d.\n", pid, time(NULL), n, k);
 
-        table_buffer[0].sem_op = 1;
-        semop(semaphores, table_buffer, 1);
+        semop(semaphores, act.close_table, 1);
 
         sleep(4 + (float)rand() / RAND_MAX);
-        printf("%d\t%ld\nDostarczam pizze: %d.\n", pid, time(NULL), n);
+        printf("%d\t%ld\tDostarczam pizze: %d.\n", pid, time(NULL), n);
         sleep(4 + (float)rand() / RAND_MAX);
     }
+
+    shmdt(pizzeria);
 }
 
 int main(int argc, char const *argv[])
@@ -162,9 +156,16 @@ int main(int argc, char const *argv[])
     int m = atoi(argv[2]);
 
     int key = ftok(".", PROJ_ID);
-    struct data *table_oven =
-        shmat(shmget(key, MEMORY_SIZE, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR), NULL, 0);
-    int semaphores = semget(key, SEMAPHORES, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+    memory = shmget(key, MEMORY_SIZE, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+    perror("Memory");
+    pizzeria = shmat(memory, NULL, 0);
+    perror("Table/oven");
+
+    pizzeria->oven_last = 0;
+    pizzeria->table_last = 0;
+    pizzeria->running = 1;
+
+    semaphores = semget(key, SEMAPHORES, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
     union semun
     {
@@ -200,6 +201,23 @@ int main(int argc, char const *argv[])
             driver(key);
         }
     }
+
+    signal(SIGINT, clear);
+
+    for (int i = 0; i < n + m; i++) {
+        wait(NULL);
+    }
+
+    perror("\nStop");
+
+    shmdt(pizzeria);
+    shmctl(memory, IPC_RMID, NULL);
+    semctl(semaphores, 0, IPC_RMID, NULL);
+    semctl(semaphores, 1, IPC_RMID, NULL);
+    semctl(semaphores, 2, IPC_RMID, NULL);
+    semctl(semaphores, 3, IPC_RMID, NULL);
+    semctl(semaphores, 4, IPC_RMID, NULL);
+    semctl(semaphores, 5, IPC_RMID, NULL);
 
     return 0;
 }

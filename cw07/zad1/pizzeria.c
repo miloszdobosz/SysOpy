@@ -35,7 +35,6 @@ struct data
     int oven_last;
     int running;
 } * pizzeria;
-int memory;
 int semaphores;
 
 struct
@@ -70,17 +69,18 @@ struct
      {TABLE, 1, 0}}};
 
 void clear() {
-    // printf("\n\n");
     pizzeria->running = 0;
 }
 
-int cook(int key)
+void cook(int key)
 {
     int pid = getpid();
     int n, m, k;
 
-    struct data *pizzeria = shmat(shmget(key, 0, S_IRUSR | S_IWUSR), NULL, 0);
-    int semaphores = semget(key, 0, S_IRUSR | S_IWUSR);
+    srand(pid);
+
+    pizzeria = shmat(shmget(key, 0, S_IRUSR | S_IWUSR), NULL, 0);
+    semaphores = semget(key, 0, S_IRUSR | S_IWUSR);
 
     while (pizzeria->running)
     {
@@ -117,13 +117,15 @@ int cook(int key)
     shmdt(pizzeria);
 }
 
-int driver(int key)
+void driver(int key)
 {
     int pid = getpid();
     int n, k;
 
-    struct data *pizzeria = shmat(shmget(key, 0, S_IRUSR | S_IWUSR), NULL, 0);
-    int semaphores = semget(key, 0, S_IRUSR | S_IWUSR);
+    srand(pid);
+
+    pizzeria = shmat(shmget(key, 0, S_IRUSR | S_IWUSR), NULL, 0);
+    semaphores = semget(key, 0, S_IRUSR | S_IWUSR);
 
     while (pizzeria->running)
     {
@@ -156,7 +158,7 @@ int main(int argc, char const *argv[])
     int m = atoi(argv[2]);
 
     int key = ftok(".", PROJ_ID);
-    memory = shmget(key, MEMORY_SIZE, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+    int memory = shmget(key, MEMORY_SIZE, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
     perror("Memory");
     pizzeria = shmat(memory, NULL, 0);
     perror("Table/oven");

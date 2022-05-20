@@ -1,0 +1,25 @@
+Czasy numbers 1-10 watkow:
+Czas calkowity: 430 u_sec
+Czas calkowity: 458 u_sec
+Czas calkowity: 1198 u_sec
+Czas calkowity: 575 u_sec
+Czas calkowity: 626 u_sec
+Czas calkowity: 706 u_sec
+Czas calkowity: 1697 u_sec
+Czas calkowity: 647 u_sec
+Czas calkowity: 799 u_sec
+Czas calkowity: 1137 u_sec
+
+Czasy block 1-10 watkow:
+Czas calkowity: 415 u_sec
+Czas calkowity: 972 u_sec
+Czas calkowity: 419 u_sec
+Czas calkowity: 1148 u_sec
+Czas calkowity: 1579 u_sec
+Czas calkowity: 1301 u_sec
+Czas calkowity: 1611 u_sec
+Czas calkowity: 478 u_sec
+Czas calkowity: 1586 u_sec
+Czas calkowity: 687 u_sec
+
+Dla pliku o wielkosci 47kB czas wykonywania zadania jest znikomy w stosunku do czasu tworzenia i usuwania watkow, niezaleznie od ich liczby.

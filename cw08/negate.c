@@ -2,17 +2,60 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
+#include <sys/time.h>
 
 #define LINE_MAX 70
-#define VAL_MAX 255
+
+int n_threads;
+int *picture;
 
 void numbers(void *arg)
 {
-    
+    int i = (int)arg;
+    int max_val = picture[2];
+
+    int low = max_val * i / (2 * n_threads);
+    int high = max_val * (i + 1) / (2 * n_threads);
+
+    time_t timer = time(NULL);
+
+    for (int i = 3; i < picture[0] * picture[1] + 3; i++)
+    {
+        int p = picture[i];
+
+        if (low <= p && p < high || max_val - high < p && p <= max_val - low)
+        {
+            picture[i] = max_val - p;
+        }
+    }
+
+    timer = time(NULL) - timer;
+    pthread_exit(&timer);
 }
 
 void block(void *arg)
 {
+    int i = (int)arg;
+    int width = picture[0];
+    int height = picture[1];
+    int max_val = picture[2];
+
+    int low = width * i / (n_threads);
+    int high = width * (i + 1) / n_threads;
+
+    time_t timer = time(NULL);
+
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 3 + low; j < 3 + high; j++)
+        {
+            int index = i * width + j;
+            picture[index] = max_val - picture[index];
+        }
+    }
+
+    timer = time(NULL) - timer;
+    pthread_exit(&timer);
 }
 
 int *read(FILE *file)
@@ -61,7 +104,7 @@ int main(int argc, char *argv[])
 
     void *function;
 
-    int n_threads = atoi(argv[1]);
+    n_threads = atoi(argv[1]);
     char *mode = argv[2];
     char *in_path = argv[3];
     char *out_path = argv[4];
@@ -94,14 +137,26 @@ int main(int argc, char *argv[])
         exit(4);
     }
 
+    picture = read(in);
+
+    struct timeval start, stop, total;
+    gettimeofday(&start, NULL);
+
     pthread_t threads[n_threads];
 
-    int *picture = read(in);
+    for (int i = 0; i < n_threads; i++)
+    {
+        pthread_create(&threads[i], NULL, function, (void *)i);
+    }
 
-    // for (int i = 0; i < n_threads; i++)
-    // {
-    //     pthread_create(&threads[i], NULL, function, "A");
-    // }
+    for (int i = 0; i < n_threads; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    gettimeofday(&stop, NULL);
+    printf("Czas calkowity: %ld u_sec\n",
+           1000000 * (stop.tv_sec - start.tv_sec) + stop.tv_usec - start.tv_usec);
 
     write(out, picture);
 
